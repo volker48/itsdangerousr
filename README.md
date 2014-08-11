@@ -1,1 +1,1 @@
-This is a port of Python's [https://github.com/mitsuhiko/itsdangerous](itsdangerous) to Ruby
+This is a port of Python's [itsdangerous](https://github.com/mitsuhiko/itsdangerous) to Ruby
