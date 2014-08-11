@@ -1,18 +1,44 @@
 require 'test/unit'
 require 'itsdangerous'
 
-class WantBytesTests < Test::Unit::TestCase
-
-  # Fake test
-  def test_encoding_works
-    test_string = 'some secret'
-    test_string = test_string.encode('ascii')
-    s = want_bytes(test_string)
-    assert(s.encoding == Encoding::UTF_8, 'Encoding should be utf-8')
-  end
+class UtilityTests < Test::Unit::TestCase
 
   def test_base64_encode
     encoded = base64_encode('this is a long test')
     assert(encoded == 'dGhpcyBpcyBhIGxvbmcgdGVzdA')
   end
+
+  def test_base64_decode
+    decoded = base64_decode('dGhpcyBpcyBhIGxvbmcgdGVzdA')
+    assert(decoded == 'this is a long test')
+  end
+
+  def test_ctc_equal
+    assert(constant_time_compare('abc123', 'abc123'))
+
+  end
+
+  def test_ctc_val1_longer
+    assert(!constant_time_compare('asdfasdfasdf', 'a'))
+  end
+
+  def test_ctc_val2_longer
+    assert(!constant_time_compare('a', 'asdf123asdf235a'))
+  end
+
+  def test_ctc_empty_string
+    assert(constant_time_compare('', ''))
+  end
+
+end
+
+
+class SerializerTests < Test::Unit::TestCase
+  def test_dump_payload
+    payload = {:message => 'hello', :status => 'ok'}
+    s = Serializer.new('key')
+    dumped = s.dump_payload(payload)
+    assert(dumped == '{"message":"hello","status":"ok"}')
+  end
+
 end
