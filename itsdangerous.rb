@@ -1,7 +1,7 @@
 require 'json'
 require 'base64'
 require 'digest/sha1'
-require 'digest/hmac'
+require 'openssl'
 require 'zlib'
 
 
@@ -23,7 +23,7 @@ end
 
 class Signer
 
-  @@default_digest_method = Digest::SHA1
+  @@default_digest_method = OpenSSL::Digest::SHA1
   @@default_key_derivation = 'django-concat'
 
   def initialize(secret_key, options={})
@@ -38,7 +38,7 @@ class Signer
 
   def get_signature(value)
     key = derive_key()
-    base64_encode(Digest.HMAC.hexdigest(value, key, @digest_method))
+    base64_encode(OpenSSL::HMAC.digest(@digest_method.new, key, value))
   end
 
   def sign(value)
@@ -53,7 +53,7 @@ class Signer
       when 'django-concat'
         @digest_method.digest(@salt + 'signer' + @secret_key)
       when 'hmac'
-        hmac = Digest.HMAC.new(@secret_key, @digest_method)
+        hmac = OpenSSL::HMAC.new(@secret_key, @digest_method)
         hmac.update(@salt)
         hmac.digest()
       when 'none'
@@ -115,7 +115,7 @@ class Serializer
     defaults = {:serializer => nil}
     options = defaults.merge(options)
     serializer = options[:serializer].nil? ? @serializer : options[:serializer]
-    serializer.load(payload.encode('utf-8'))
+    serializer.parse(payload.encode('utf-8'), :symbolize_names => true)
   end
 
   def dump_payload(obj)
