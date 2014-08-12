@@ -179,12 +179,12 @@ module URLSaferSerializerMixin
     json = base64_decode(payload)
     if decompress
       begin
-        json = Zlib::Inflate.inflate(payload)
+        json = Zlib::Inflate.inflate(json)
       rescue => e
         raise BadPayload, "Could not zlib decompress the payload before decoding the payload. #{e}"
       end
-      super(json)
     end
+    super(json)
   end
 
   def dump_payload(obj)
