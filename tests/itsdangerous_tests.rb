@@ -74,6 +74,35 @@ class SerializerTests < Test::Unit::TestCase
     assert(dumped == "{\"message\":\"python rules\"}.#{encoded}")
   end
 
+  def test_dumps_loads
+    test_cases = [['a', 'list'], 'a string', 'a unicode string \u2019', {a: 'dictionary'}, 42, 42.5]
+    test_cases.each do |test_case|
+      dumped = @serializer.dumps(test_case)
+      assert_not_equal(test_case, dumped)
+      loaded = @serializer.loads(dumped)
+      assert_equal(test_case, loaded)
+    end
+  end
+
+end
+
+class URLSafeSerializerTests < Test::Unit::TestCase
+
+  def setup
+    @serializer = URLSafeSerializer.new('key')
+    @short_payload = {:message => 'This is a test', :status => 'ok'}
+    @long_payload = {:message => 'This is a longer message so we can see if it will compress something long', :lift => 'do you even, bro?', :status => 'copacetic'}
+  end
+
+  def test_dump_payload_short
+    dumped = @serializer.dumps(@short_payload)
+    assert(dumped[0] != '.')
+    assert(dumped.include?('.'))
+  end
+
+  def test_dumps_long
+    dumped = @serializer.dump_payload(@long_payload)
+  end
 end
 
 

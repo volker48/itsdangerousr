@@ -1,6 +1,5 @@
 require 'json'
 require 'base64'
-require 'digest/sha1'
 require 'openssl'
 require 'zlib'
 
@@ -20,6 +19,30 @@ def constant_time_compare(val1, val2)
   check == 0
 end
 
+class SigningAlgorithm
+
+  def get_signature(key, value)
+    raise 'Not Implemented'
+  end
+
+  def verify_signature(key, value, sig)
+    constant_time_compare(sig, get_signature(key, value))
+  end
+
+end
+
+class HMACAlgorithm < SigningAlgorithm
+  @@default_digest_method = OpenSSL::Digest::SHA1
+
+  def initialize(digest_method=nil)
+    @digest_method = digest_method.nil? ? @@default_digest_method : digest_method
+  end
+
+  def get_signature(key, value)
+    OpenSSL::HMAC.digest(@digest_method.new, key, value)
+  end
+end
+
 
 class Signer
 
@@ -27,22 +50,24 @@ class Signer
   @@default_key_derivation = 'django-concat'
 
   def initialize(secret_key, options={})
-    defaults = {:salt => 'itsdangerous.Signer', :sep => '.', :key_derivation => nil, :digest_method => nil}
+    defaults = {:salt => 'itsdangerous.Signer', :sep => '.', :key_derivation => nil, :digest_method => nil, :algorithm => nil}
     options = defaults.merge(options)
     @secret_key = secret_key.encode('utf-8')
     @sep = options[:sep].encode('utf-8')
     @salt = options[:salt].encode('utf-8')
     @key_derivation = options[:key_derivation].nil? ? @@default_key_derivation : options[:key_derivation]
     @digest_method = options[:digest_method].nil? ? @@default_digest_method : options[:digest_method]
+    @algorithm = options[:algorithm].nil? ? HMACAlgorithm.new() : options[:algorithm]
   end
 
   def get_signature(value)
+    value = value.encode('utf-8')
     key = derive_key()
-    base64_encode(OpenSSL::HMAC.digest(@digest_method.new, key, value))
+    sig = @algorithm.get_signature(key, value)
+    base64_encode(sig)
   end
 
   def sign(value)
-    value = value.encode('utf-8')
     value + @sep + get_signature(value)
   end
 
@@ -80,11 +105,13 @@ class Signer
     unless verify_signature(value, sig)
       raise BadSignature, "Signature #{sig} does not match"
     end
+    value
   end
 
   def verify_signature(value, sig)
+    key = derive_key()
     sig = base64_decode(sig)
-    constant_time_compare(sig, get_signature(value))
+    @algorithm.verify_signature(key, value, sig)
   end
 
 end
@@ -115,7 +142,7 @@ class Serializer
     defaults = {:serializer => nil}
     options = defaults.merge(options)
     serializer = options[:serializer].nil? ? @serializer : options[:serializer]
-    serializer.parse(payload.encode('utf-8'), :symbolize_names => true)
+    serializer.load(payload.encode('utf-8'), nil, :symbolize_names => true)
   end
 
   def dump_payload(obj)
@@ -152,7 +179,7 @@ module URLSaferSerializerMixin
     json = base64_decode(payload)
     if decompress
       begin
-        json = Zlib.Inflate.inflate(payload)
+        json = Zlib::Inflate.inflate(payload)
       rescue => e
         raise BadPayload, "Could not zlib decompress the payload before decoding the payload. #{e}"
       end
@@ -163,13 +190,14 @@ module URLSaferSerializerMixin
   def dump_payload(obj)
     json = super(obj)
     is_compressed = false
-    compressed = Zlib.deflate(json)
+    compressed = Zlib::Deflate.deflate(json)
     if compressed.length < json.length - 1
       json = compressed
       is_compressed = true
     end
     base64d = base64_encode(json)
     base64d.prepend('.') if is_compressed
+    base64d
   end
 
 end
