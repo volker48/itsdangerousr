@@ -113,6 +113,15 @@ class URLSafeSerializerTests < Test::Unit::TestCase
     end
   end
 
+  def test_load_from_python
+    key = "\x18j\xe4iiw\xdd\xcb\xacF\x1a\xc0\x17\xc5\x8b\xe7"
+    plain_text = 'this is something i want secure'
+    from_python = 'InRoaXMgaXMgc29tZXRoaW5nIGkgd2FudCBzZWN1cmUi.8frS9vZcZJCSLAW7zK-gGC68JKM'
+    s = URLSafeSerializer.new(key)
+    loaded = s.loads(from_python)
+    assert_equal(plain_text, loaded)
+  end
+
 end
 
 

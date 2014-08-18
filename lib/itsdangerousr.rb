@@ -5,11 +5,11 @@ require 'zlib'
 
 
 def base64_encode(string)
-  Base64.urlsafe_encode64(string).delete('=')
+  Base64.urlsafe_encode64(string).gsub(/=+$/, '')
 end
 
 def base64_decode(string)
-  Base64.urlsafe_decode64(string + '=' * string.length % 4)
+  Base64.urlsafe_decode64(string + '=' * (-string.length % 4))
 end
 
 
@@ -52,16 +52,15 @@ class Signer
   def initialize(secret_key, options={})
     defaults = {:salt => 'itsdangerous.Signer', :sep => '.', :key_derivation => nil, :digest_method => nil, :algorithm => nil}
     options = defaults.merge(options)
-    @secret_key = secret_key.encode('utf-8')
-    @sep = options[:sep].encode('utf-8')
-    @salt = options[:salt].encode('utf-8')
+    @secret_key = secret_key
+    @sep = options[:sep]
+    @salt = options[:salt]
     @key_derivation = options[:key_derivation].nil? ? @@default_key_derivation : options[:key_derivation]
     @digest_method = options[:digest_method].nil? ? @@default_digest_method : options[:digest_method]
     @algorithm = options[:algorithm].nil? ? HMACAlgorithm.new() : options[:algorithm]
   end
 
   def get_signature(value)
-    value = value.encode('utf-8')
     key = derive_key()
     sig = @algorithm.get_signature(key, value)
     base64_encode(sig)
@@ -132,7 +131,7 @@ class Serializer
     defaults = {:salt => 'itsdangerous', :serializer => nil, :signer => nil, :signer_kwargs => nil}
     options = defaults.merge(options)
     @secret_key = secret_key
-    @salt = options[:salt].encode('utf-8')
+    @salt = options[:salt]
     @serializer = options[:serializer].nil? ? @@default_serializer : options[:serializer]
     @signer = options[:signer].nil? ? @@default_signer : options[:signer]
     @signer_kwargs = options[:signer_kwargs].nil? ? {} : options[:signer_kwargs]
@@ -142,7 +141,7 @@ class Serializer
     defaults = {:serializer => nil}
     options = defaults.merge(options)
     serializer = options[:serializer].nil? ? @serializer : options[:serializer]
-    serializer.load(payload.encode('utf-8'), nil, :symbolize_names => true)
+    serializer.load(payload, nil, :symbolize_names => true)
   end
 
   def dump_payload(obj)
@@ -162,7 +161,6 @@ class Serializer
   end
 
   def loads(s, salt=nil)
-    s = s.encode('utf-8')
     load_payload(make_signer(:salt => salt).unsign(s))
   end
 
