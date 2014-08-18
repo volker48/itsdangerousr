@@ -9,7 +9,7 @@ Gem::Specification.new do |spec|
   spec.email         = ["marcus.mccurdy@gmail.com"]
   spec.summary       = %q{itsdangerous ported to Ruby}
   spec.description   = %q{Longer description of your project.}
-  spec.homepage      = "http://domainforproject.com/"
+  spec.homepage      = "http://github.com/volker48/itsdangerousr/"
   spec.license       = "MIT"
 
   spec.files         = ['lib/NAME.rb']
