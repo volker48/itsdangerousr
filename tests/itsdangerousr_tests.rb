@@ -4,37 +4,37 @@ require 'itsdangerousr'
 class UtilityTests < Test::Unit::TestCase
 
   def test_base64_encode
-    encoded = base64_encode('this is a long test')
+    encoded = Itsdangerousr.base64_encode('this is a long test')
     assert(encoded == 'dGhpcyBpcyBhIGxvbmcgdGVzdA')
   end
 
   def test_base64_decode
-    decoded = base64_decode('dGhpcyBpcyBhIGxvbmcgdGVzdA')
+    decoded = Itsdangerousr.base64_decode('dGhpcyBpcyBhIGxvbmcgdGVzdA')
     assert(decoded == 'this is a long test')
   end
 
   def test_ctc_equal
-    assert(constant_time_compare('abc123', 'abc123'))
+    assert(Itsdangerousr.constant_time_compare('abc123', 'abc123'))
 
   end
 
   def test_ctc_val1_longer
-    assert(!constant_time_compare('asdfasdfasdf', 'a'))
+    assert(!Itsdangerousr.constant_time_compare('asdfasdfasdf', 'a'))
   end
 
   def test_ctc_val2_longer
-    assert(!constant_time_compare('a', 'asdf123asdf235a'))
+    assert(!Itsdangerousr.constant_time_compare('a', 'asdf123asdf235a'))
   end
 
   def test_ctc_empty_string
-    assert(constant_time_compare('', ''))
+    assert(Itsdangerousr.constant_time_compare('', ''))
   end
 
 end
 
 class SignerTests < Test::Unit::TestCase
   def setup
-    @signer = Signer.new('key')
+    @signer = Itsdangerousr::Signer.new('key')
   end
 
   def test_derive_key
@@ -48,7 +48,7 @@ end
 class SerializerTests < Test::Unit::TestCase
 
   def setup
-    @serializer = Serializer.new('key')
+    @serializer = Itsdangerousr::Serializer.new('key')
   end
 
   def test_dump_payload
@@ -67,10 +67,10 @@ class SerializerTests < Test::Unit::TestCase
   def test_dumps
     payload = {:message => 'python rules'}
     dumped = @serializer.dumps(payload)
-    signer = Signer.new('key', :salt => 'itsdangerous')
+    signer = Itsdangerousr::Signer.new('key', :salt => 'itsdangerous')
     key = signer.derive_key()
     hmaced = OpenSSL::HMAC.digest(OpenSSL::Digest::SHA1.new, key, '{"message":"python rules"}'.encode('utf-8'))
-    encoded = base64_encode(hmaced)
+    encoded = Itsdangerousr.base64_encode(hmaced)
     assert(dumped == "{\"message\":\"python rules\"}.#{encoded}")
   end
 
@@ -89,7 +89,7 @@ end
 class URLSafeSerializerTests < Test::Unit::TestCase
 
   def setup
-    @serializer = URLSafeSerializer.new('key')
+    @serializer = Itsdangerousr::URLSafeSerializer.new('key')
     @short_payload = {:message => 'This is a test', :status => 'ok'}
     @long_payload = {:message => 'This is a longer message so we can see if it will compress something long', :lift => 'do you even, bro?', :status => 'copacetic'}
   end
@@ -117,7 +117,7 @@ class URLSafeSerializerTests < Test::Unit::TestCase
     key = "\x18j\xe4iiw\xdd\xcb\xacF\x1a\xc0\x17\xc5\x8b\xe7"
     plain_text = 'this is something i want secure'
     from_python = 'InRoaXMgaXMgc29tZXRoaW5nIGkgd2FudCBzZWN1cmUi.8frS9vZcZJCSLAW7zK-gGC68JKM'
-    s = URLSafeSerializer.new(key)
+    s = Itsdangerousr::URLSafeSerializer.new(key)
     loaded = s.loads(from_python)
     assert_equal(plain_text, loaded)
   end
