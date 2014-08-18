@@ -1,5 +1,5 @@
 require 'test/unit'
-require 'itsdangerous'
+require 'itsdangerousr'
 
 class UtilityTests < Test::Unit::TestCase
 
