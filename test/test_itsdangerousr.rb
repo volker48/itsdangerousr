@@ -158,4 +158,30 @@ class TimedSignerTests < Test::Unit::TestCase
 
 end
 
+class TimedSerializerTests < Test::Unit::TestCase
+
+  def setup
+    @serializer = Itsdangerousr::TimedSerializer.new('secret')
+  end
+
+  def test_not_expired
+    original = 'My data'
+    payload = @serializer.dumps(original)
+    assert_not_equal(payload, original)
+    loaded = @serializer.loads(payload, :max_age => 500)
+    assert_equal(original, loaded)
+  end
+
+  def test_expired
+    original = {:message => 'The files are _in_ the computer?'}
+    payload = @serializer.dumps(original)
+    assert_not_equal(payload, original)
+    sleep(2)
+    assert_raise(Itsdangerousr::SignatureExpired, "Timestamp should be too old") {
+      @serializer.loads(payload, :max_age => 1)
+    }
+  end
+
+end
+
 

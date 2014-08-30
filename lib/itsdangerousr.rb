@@ -282,6 +282,23 @@ module Itsdangerousr
 
   end
 
+  class TimedSerializer < Serializer
+    @@default_signer = TimestampSigner
+
+    def loads(s, options={})
+      defaults = {:max_age=>nil, :return_timestamp=>false, :salt=>nil}
+      options = defaults.merge(options)
+      signer = make_signer(:salt => options[:salt])
+      base64d, timestamp = signer.unsign(s, options)
+      payload = load_payload(base64d)
+      if options[:return_timestamp]
+        return payload, timestamp
+      end
+      payload
+    end
+
+  end
+
   class URLSafeSerializer < Serializer
     include URLSaferSerializerMixin
   end
