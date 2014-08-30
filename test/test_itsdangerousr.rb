@@ -149,6 +149,13 @@ class TimedSignerTests < Test::Unit::TestCase
     }
   end
 
+  def test_raises_badtimesignature
+    non_timestamp_signed = Itsdangerousr::Signer.new('secret').sign('test')
+    assert_raise(Itsdangerousr::BadTimeSignature, "Raise exception on missing timestamp") {
+      @signer.unsign(non_timestamp_signed)
+    }
+  end
+
 end
 
 
