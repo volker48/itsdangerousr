@@ -1,4 +1,4 @@
-require 'helper'
+require_relative 'helper'
 
 class UtilityTests < Test::Unit::TestCase
 

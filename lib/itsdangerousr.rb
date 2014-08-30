@@ -33,10 +33,10 @@ module Itsdangerousr
   end
 
   class HMACAlgorithm < SigningAlgorithm
-    @@default_digest_method = OpenSSL::Digest::SHA1
 
     def initialize(digest_method=nil)
-      @digest_method = digest_method.nil? ? @@default_digest_method : digest_method
+      @default_digest_method = OpenSSL::Digest::SHA1
+      @digest_method = digest_method.nil? ? @default_digest_method : digest_method
     end
 
     def get_signature(key, value)
@@ -47,17 +47,16 @@ module Itsdangerousr
 
   class Signer
 
-    @@default_digest_method = OpenSSL::Digest::SHA1
-    @@default_key_derivation = 'django-concat'
-
     def initialize(secret_key, options={})
       defaults = {:salt => 'itsdangerous.Signer', :sep => '.', :key_derivation => nil, :digest_method => nil, :algorithm => nil}
       options = defaults.merge(options)
+      @default_digest_method = OpenSSL::Digest::SHA1
+      @default_key_derivation = 'django-concat'
       @secret_key = secret_key
       @sep = options[:sep]
       @salt = options[:salt]
-      @key_derivation = options[:key_derivation].nil? ? @@default_key_derivation : options[:key_derivation]
-      @digest_method = options[:digest_method].nil? ? @@default_digest_method : options[:digest_method]
+      @key_derivation = options[:key_derivation].nil? ? @default_key_derivation : options[:key_derivation]
+      @digest_method = options[:digest_method].nil? ? @default_digest_method : options[:digest_method]
       @algorithm = options[:algorithm].nil? ? HMACAlgorithm.new() : options[:algorithm]
     end
 
@@ -125,16 +124,15 @@ module Itsdangerousr
 
   class Serializer
 
-    @@default_signer = Signer
-    @@default_serializer = JSON
-
     def initialize(secret_key, options={})
       defaults = {:salt => 'itsdangerous', :serializer => nil, :signer => nil, :signer_kwargs => nil}
       options = defaults.merge(options)
+      @default_signer = Signer
+      @default_serializer = JSON
       @secret_key = secret_key
       @salt = options[:salt]
-      @serializer = options[:serializer].nil? ? @@default_serializer : options[:serializer]
-      @signer = options[:signer].nil? ? @@default_signer : options[:signer]
+      @serializer = options[:serializer].nil? ? @default_serializer : options[:serializer]
+      @signer = options[:signer].nil? ? @default_signer : options[:signer]
       @signer_kwargs = options[:signer_kwargs].nil? ? {} : options[:signer_kwargs]
     end
 
