@@ -124,3 +124,31 @@ class URLSafeSerializerTests < Test::Unit::TestCase
 end
 
 
+class TimedSignerTests < Test::Unit::TestCase
+  def setup
+    @signer = Itsdangerousr::TimestampSigner.new('secret')
+  end
+
+  def test_sign
+    signed = @signer.sign('this is a test')
+    assert(signed.include?('this is a test'))
+    assert(signed.count('.') == 2)
+  end
+
+  def test_unsign_no_options
+    signed = @signer.sign('this is a test')
+    unsigned = @signer.unsign(signed)
+    assert(unsigned == 'this is a test')
+  end
+
+  def test_sig_error
+    signed = @signer.sign('my test')
+    other_signer = Itsdangerousr::TimestampSigner.new('other secret')
+    assert_raise(Itsdangerousr::BadSignature, "Raise exception on bad signature") {
+      other_signer.unsign(signed)
+    }
+  end
+
+end
+
+

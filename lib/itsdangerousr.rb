@@ -1,9 +1,13 @@
 require 'json'
 require 'base64'
 require 'openssl'
+require 'time'
 require 'zlib'
 
 module Itsdangerousr
+
+  # 2011/01/01 in UTC
+  EPOCH = 1293840000
 
   def self.base64_encode(string)
     Base64.urlsafe_encode64(string).gsub(/=+$/, '')
@@ -102,7 +106,7 @@ module Itsdangerousr
       end
       value, _, sig = signed_value.rpartition(@sep)
       unless verify_signature(value, sig)
-        raise BadSignature, "Signature #{sig} does not match"
+        raise BadSignature.new("Signature #{sig} does not match", value)
       end
       value
     end
@@ -115,7 +119,88 @@ module Itsdangerousr
 
   end
 
+  class TimestampSigner < Signer
+    def sign(value)
+      timestamp = Itsdangerousr::base64_encode((Time.now.to_i - Itsdangerousr::EPOCH).to_s)
+      value = value + @sep + timestamp
+      value + @sep + get_signature(value)
+    end
+
+    def unsign(value, options={})
+      defaults = {:max_age => nil, :return_timestamp => false}
+      options = defaults.merge(options)
+      @max_age = options[:max_age]
+      @return_timestamp = options[:return_timestamp]
+      begin
+        result = super(value)
+        sig_error = nil
+      rescue BadSignature => e
+        sig_error = e
+        if e.payload.nil?
+          result = e.paylod
+        else
+          result = ''
+        end
+
+      end
+
+      unless result.include?(@sep)
+        if sig_error
+          raise sig_error
+        end
+        raise BadTimeSignature, 'Timestamp missing'
+      end
+
+      value, _, timestamp = result.rpartition(@sep)
+
+      begin
+        timestamp = Itsdangerousr::base64_decode(timestamp).to_i
+      rescue StandardError
+        timestamp = nil
+      end
+
+      unless sig_error.nil?
+        raise BadTimeSignature.new(sig_error.message, value, timestamp)
+      end
+
+      if timestamp.nil?
+        raise BadTimeSignature.new('Malformed timestamp', value)
+      end
+
+      unless @max_age.nil?
+        age = Time.now.to_i - timestamp.to_i
+        if age > @max_age
+          raise SignatureExpired.new("Signature age %s > %s seconds" % [age, @max_age], value,)
+        end
+      end
+
+      if @return_timestamp
+        return value, timestamp
+      end
+      value
+    end
+  end
+
   class BadSignature < StandardError
+
+    attr_reader :payload
+
+    def initialize(message, payload=nil)
+      super(message)
+      @payload = payload
+    end
+
+  end
+
+  class BadTimeSignature < BadSignature
+    def initialize (message, payload=nil, date_signed=nil)
+      super(message, payload)
+      @date_signed = date_signed
+    end
+  end
+
+  class SignatureExpired < BadTimeSignature
+
   end
 
   class BadPayload < StandardError
