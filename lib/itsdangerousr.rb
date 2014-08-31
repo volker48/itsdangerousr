@@ -168,7 +168,7 @@ module Itsdangerousr
       end
 
       unless @max_age.nil?
-        age = Time.now.to_i - timestamp.to_i
+        age = (Time.now.to_i - Itsdangerousr::EPOCH) - timestamp.to_i
         if age > @max_age
           raise SignatureExpired.new("Signature age %s > %s seconds" % [age, @max_age], value,)
         end
@@ -283,10 +283,13 @@ module Itsdangerousr
   end
 
   class TimedSerializer < Serializer
-    @@default_signer = TimestampSigner
+
+    def initialize(secret_key, options={:signer => TimestampSigner})
+      super(secret_key, options)
+    end
 
     def loads(s, options={})
-      defaults = {:max_age=>nil, :return_timestamp=>false, :salt=>nil}
+      defaults = {:max_age=>nil, :return_timestamp=>false, :salt=>@salt}
       options = defaults.merge(options)
       signer = make_signer(:salt => options[:salt])
       base64d, timestamp = signer.unsign(s, options)
