@@ -34,9 +34,8 @@ module Itsdangerousr
 
   class HMACAlgorithm < SigningAlgorithm
 
-    def initialize(digest_method=nil)
-      @default_digest_method = OpenSSL::Digest::SHA1
-      @digest_method = digest_method.nil? ? @default_digest_method : digest_method
+    def initialize(digest_method=OpenSSL::Digest::SHA1)
+      @digest_method = digest_method
     end
 
     def get_signature(key, value)
@@ -48,16 +47,17 @@ module Itsdangerousr
   class Signer
 
     def initialize(secret_key, options={})
-      defaults = {:salt => 'itsdangerous.Signer', :sep => '.', :key_derivation => nil, :digest_method => nil, :algorithm => nil}
+      defaults = {:salt => 'itsdangerous.Signer', :sep => '.',
+                  :key_derivation => 'django-concat',
+                  :digest_method => OpenSSL::Digest::SHA1,
+                  :algorithm => HMACAlgorithm.new()}
       options = defaults.merge(options)
-      @default_digest_method = OpenSSL::Digest::SHA1
-      @default_key_derivation = 'django-concat'
       @secret_key = secret_key
       @sep = options[:sep]
       @salt = options[:salt]
-      @key_derivation = options[:key_derivation].nil? ? @default_key_derivation : options[:key_derivation]
-      @digest_method = options[:digest_method].nil? ? @default_digest_method : options[:digest_method]
-      @algorithm = options[:algorithm].nil? ? HMACAlgorithm.new() : options[:algorithm]
+      @key_derivation = options[:key_derivation]
+      @digest_method = options[:digest_method]
+      @algorithm = options[:algorithm]
     end
 
     def get_signature(value)
@@ -125,21 +125,20 @@ module Itsdangerousr
   class Serializer
 
     def initialize(secret_key, options={})
-      defaults = {:salt => 'itsdangerous', :serializer => nil, :signer => nil, :signer_kwargs => nil}
+      defaults = {:salt => 'itsdangerous', :serializer => JSON,
+                  :signer => Signer, :signer_kwargs => {}}
       options = defaults.merge(options)
-      @default_signer = Signer
-      @default_serializer = JSON
       @secret_key = secret_key
       @salt = options[:salt]
-      @serializer = options[:serializer].nil? ? @default_serializer : options[:serializer]
-      @signer = options[:signer].nil? ? @default_signer : options[:signer]
-      @signer_kwargs = options[:signer_kwargs].nil? ? {} : options[:signer_kwargs]
+      @serializer = options[:serializer]
+      @signer = options[:signer]
+      @signer_kwargs = options[:signer_kwargs]
     end
 
     def load_payload(payload, options={})
-      defaults = {:serializer => nil}
+      defaults = {:serializer => @serializer}
       options = defaults.merge(options)
-      serializer = options[:serializer].nil? ? @serializer : options[:serializer]
+      serializer = options[:serializer]
       serializer.load(payload, nil, :symbolize_names => true)
     end
 
@@ -148,18 +147,17 @@ module Itsdangerousr
     end
 
     def make_signer(options={})
-      defaults = {:salt => nil}
+      defaults = {:salt => @salt}
       options = defaults.merge(options)
-      salt = options[:salt].nil? ? @salt : options[:salt]
-      @signer.new(@secret_key, @signer_kwargs.merge(:salt => salt))
+      @signer.new(@secret_key, @signer_kwargs.merge(:salt => options[:salt]))
     end
 
-    def dumps(obj, salt=nil)
+    def dumps(obj, salt=@salt)
       payload = dump_payload(obj)
       make_signer(:salt => salt).sign(payload)
     end
 
-    def loads(s, salt=nil)
+    def loads(s, salt=@salt)
       load_payload(make_signer(:salt => salt).unsign(s))
     end
 
