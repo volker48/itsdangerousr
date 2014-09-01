@@ -248,7 +248,7 @@ module Itsdangerousr
 
   end
 
-  module URLSaferSerializerMixin
+  module URLSafeSerializerMixin
 
     def load_payload(payload)
       decompress = false
@@ -303,7 +303,11 @@ module Itsdangerousr
   end
 
   class URLSafeSerializer < Serializer
-    include URLSaferSerializerMixin
+    include URLSafeSerializerMixin
+  end
+
+  class URLSafeTimedSerializer < TimedSerializer
+    include URLSafeSerializerMixin
   end
 
 end
