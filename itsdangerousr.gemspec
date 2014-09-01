@@ -11,8 +11,8 @@ Gem::Specification.new do |s|
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.require_paths = ["lib"]
   s.authors = ["Marcus McCurdy"]
-  s.date = "2014-08-21"
-  s.description = "Sometimes you just want to send some data to untrusted\n      environments. But how to do this safely? The trick involves signing.\n      Given a key only you know, you can cryptographically sign your data and hand\n      it over to someone else. When you get the data back you can easily ensure\n      that nobody tampered with it."
+  s.date = "2014-09-01"
+  s.description = "Sometimes you just want to send some data to untrusted environments. But how to do this safely? The trick involves signing. Given a key only you know, you can cryptographically sign your data and hand it over to someone else. When you get the data back you can easily ensure that nobody tampered with it."
   s.email = "marcus.mccurdy@gmail.com"
   s.extra_rdoc_files = [
     "LICENSE.txt",
